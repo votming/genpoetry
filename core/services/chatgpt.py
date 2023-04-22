@@ -8,10 +8,9 @@ openai.api_key = Config.CHATGPT_TOKEN
 
 class GenerateChatGPTQuote:
 
-    def __init__(self, request: str, chat_context: list[str] = None, temperature: int = 1, articles_number: int = 1,
-                 model: str = 'gpt-3.5-turbo', chat_id: str = None, **kwargs):
+    def __init__(self, request: str, chat_context: list[str] = None, temperature: int = 1, model: str = 'gpt-3.5-turbo',
+                 chat_id: str = None, **kwargs):
         self.model = model
-        self.articles_number = articles_number
         self.request = request
         self.chat_context = chat_context
         self.temperature = temperature
@@ -23,14 +22,13 @@ class GenerateChatGPTQuote:
             chat = openai.ChatCompletion.create(
                 model=self.model,
                 messages=messages,
-                n=self.articles_number,
+                n=1,
                 temperature=self.temperature
             )
-            output = []
-            for reply in chat.choices:
-                if reply['finish_reason'] == 'stop':
-                    output.append(reply.message.content)
-            return output
+            if chat.choices[0].finish_reason != 'stop':
+                raise Exception(f"Wasn't able to finish the completion, status: {chat.choices[0].finish_reason}")
+            text = chat.choices[0].message.content
+            return text
         except Exception as ex:
             raise Exception(f"Couldn't generate chatgpt quote. Original error: {ex}")
 
@@ -48,7 +46,6 @@ class GenerateChatGPTQuote:
             self._append_message(messages, self.request)
 
         return messages
-
 
     def _append_message(self, messages: list, text: str, role: str='user') -> None:
         messages.append({"role": role, "content": text})
