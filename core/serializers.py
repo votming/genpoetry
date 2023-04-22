@@ -3,7 +3,6 @@ from rest_framework import serializers
 from configuration import Config
 from core.exceptions import MinCharactersLessThanMaxCharactersError
 from core.models import Category, Article
-from core.services.articles import GenerateArticleService
 from core.services.chatgpt import GenerateChatGPTQuote
 
 
