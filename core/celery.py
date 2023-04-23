@@ -12,16 +12,16 @@ from core.models import Category
 from core.models import Language
 from core.services.articles import GenerateArticleService
 
-app = Celery()
-app.conf.broker_url = 'redis://localhost:6379/0'
+celery = Celery()
+celery.conf.broker_url = 'redis://localhost:6379/0'
 
 
-@app.on_after_configure.connect
+@celery.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(30.0, generate_articles.s(), expires=60, name='Generate articles')
 
 
-@app.task
+@celery.task
 def generate_articles():
     print('start generating')
     categories = Category.objects.all()
