@@ -1,3 +1,5 @@
+import uuid
+
 from rest_framework import serializers
 
 from configuration import Config
@@ -22,6 +24,8 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ArticleSerializer(serializers.ModelSerializer):
     params = serializers.JSONField(read_only=True)
+    category = serializers.CharField(source='category.name')
+    language = serializers.CharField(source='language.name')
 
     class Meta:
         model = Article
@@ -32,7 +36,6 @@ class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
     min_characters_number = serializers.IntegerField(required=False, default=400, min_value=10, max_value=9000)
     max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
-    #category = serializers.PrimaryKeyRelatedField(default=None, queryset=Category.objects.all(), required=False)
     category = serializers.CharField(default=None, required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Category.objects.all(), required=False)
     language = serializers.CharField(default='English', required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Language.objects.all(), required=False)
     key_words = serializers.CharField(default=None, max_length=2000, required=False, allow_null=True)
@@ -52,13 +55,14 @@ class ArticleCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data) -> list[Article]:
         validated_data['request'] = validated_data['request'] or Config.DEFAULT_CHATGPT_PROMPT
-        text = 'test'#GenerateChatGPTQuote(**validated_data).generate()
-        title = 'title'#GenerateChatGPTQuote({'request'=f'Generate a short title for the article: {text}', **validated_data}).generate()
+        text = GenerateChatGPTQuote(**validated_data).generate()
+        title = GenerateChatGPTQuote(request=f'Generate a short title for the article: {text}').generate()
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
+        chat_id = validated_data['chat_id'] or uuid.uuid4()
 
         return Article.objects.create(params=validated_data, text=text, title=title,category=category,
-                                      language=language, chat_id=validated_data['chat_id'])
+                                      language=language, chat_id=chat_id)
 
     def _generate_request(self, validated_data):
         settings = ''

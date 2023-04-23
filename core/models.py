@@ -12,7 +12,7 @@ class Category(models.Model):
 
 class Language(models.Model):
     name = models.CharField(max_length=50, unique=True)
-
+    priority = models.IntegerField(default=1)
 
 class Article(models.Model):
     title = models.CharField(max_length=250)

@@ -55,8 +55,9 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'genpoetry.urls'
 
 REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 10
+    'PAGE_SIZE': 10,
     #"NON_FIELD_ERRORS_KEY": "errors",
     #"DEFAULT_AUTHENTICATION_CLASSES": (
     #    "genpoetry.auth.ExampleAuthentication"

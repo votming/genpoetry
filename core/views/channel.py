@@ -1,8 +1,10 @@
-from django.db.models import QuerySet
+from django.db.models import F
+
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
+from core.filters import ArticleFilter
 from core.models import Category, Article
 from core.models import Language
 from core.serializers import CategorySerializer, ArticleSerializer, ArticleCreateSerializer
@@ -16,6 +18,7 @@ class LanguageViewSet(ModelViewSet):
     queryset = Language.objects.all()
     serializer_class = LanguageSerializer
     permission_classes = (TokenPermission,)
+    pagination_class = None
 
 
 class CategoryViewSet(ModelViewSet):
@@ -23,13 +26,21 @@ class CategoryViewSet(ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (TokenPermission,)
+    pagination_class = None
 
 
 class ArticleViewSet(ModelViewSet):
     model = Article
     serializer_class = ArticleSerializer
     queryset = Article.objects.all()
+    filterset_class = ArticleFilter
     permission_classes = (TokenPermission,)
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        if self.action == 'list' and 'dont_count' not in self.request.query_params:
+            Article.objects.filter(id__in=queryset.values_list('id')).update(shown_times=F('shown_times') + 1)
+        return queryset
 
     def generate_article(self, request, *args, **kwargs) -> Response:
         kwargs['context'] = self.get_serializer_context()
