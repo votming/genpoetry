@@ -46,14 +46,14 @@ class ArticleViewSet(ModelViewSet):
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
-        update_usage = strtobool(self.request.query_params.get('dont_count', 'false'))
-        if self.action == 'list' and update_usage:
+        dont_update_usage = strtobool(self.request.query_params.get('dont_count', 'false'))
+        if self.action == 'list' and not dont_update_usage:
             Article.objects.filter(id__in=queryset.values_list('id')).update(shown_times=F('shown_times') + 1)
         return queryset
 
     @swagger_auto_schema(manual_parameters=[dont_count_param])
     def list(self, request, *args, **kwargs):
-        super().list(request, *args, **kwargs)
+        return super().list(request, *args, **kwargs)
 
     def generate_article(self, request, *args, **kwargs) -> Response:
         kwargs['context'] = self.get_serializer_context()
