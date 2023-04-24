@@ -1,4 +1,8 @@
+from distutils.util import strtobool
+
 from django.db.models import F
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 
 from rest_framework import status
 from rest_framework.viewsets import ModelViewSet
@@ -11,6 +15,10 @@ from core.serializers import CategorySerializer, ArticleSerializer, ArticleCreat
 from core.serializers import LanguageSerializer
 from core.services.articles import GenerateArticleService
 from genpoetry.permissions import TokenPermission
+
+
+dont_count_param = openapi.Parameter('dont_count', openapi.IN_QUERY,
+                                     description="Do not increase the counter of usages", type=openapi.TYPE_BOOLEAN)
 
 
 class LanguageViewSet(ModelViewSet):
@@ -38,9 +46,14 @@ class ArticleViewSet(ModelViewSet):
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
-        if self.action == 'list' and 'dont_count' not in self.request.query_params:
+        update_usage = strtobool(self.request.query_params.get('dont_count', 'false'))
+        if self.action == 'list' and update_usage:
             Article.objects.filter(id__in=queryset.values_list('id')).update(shown_times=F('shown_times') + 1)
         return queryset
+
+    @swagger_auto_schema(manual_parameters=[dont_count_param])
+    def list(self, request, *args, **kwargs):
+        super().list(request, *args, **kwargs)
 
     def generate_article(self, request, *args, **kwargs) -> Response:
         kwargs['context'] = self.get_serializer_context()

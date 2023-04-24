@@ -1,7 +1,7 @@
 from django.urls import path
-
 from core.views.channel import CategoryViewSet, ArticleViewSet
 from core.views.channel import LanguageViewSet
+
 
 urlpatterns = [
     path('categories', CategoryViewSet.as_view({'get': 'list', 'post': 'create'})),

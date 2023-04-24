@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'core',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_framework.filters'
+    'rest_framework.filters',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
