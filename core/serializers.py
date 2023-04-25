@@ -41,7 +41,7 @@ class ArticleCreateSerializer(serializers.Serializer):
     key_words = serializers.CharField(default=None, max_length=2000, required=False, allow_null=True)
     objectivity = serializers.BooleanField(default=False, required=False)
     officiality = serializers.BooleanField(default=False, required=False)
-    temperature = serializers.FloatField(default=1.5, min_value=0, max_value=2, required=False)
+    temperature = serializers.FloatField(default=0.3, min_value=0, max_value=2, required=False)
     request = serializers.CharField(default=Config.DEFAULT_CHATGPT_PROMPT, max_length=10000, allow_null=True)
     chat_id = serializers.CharField(default=None, max_length=100, allow_null=True)
 
@@ -54,14 +54,14 @@ class ArticleCreateSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data) -> list[Article]:
-        validated_data['request'] = validated_data['request'] or Config.DEFAULT_CHATGPT_PROMPT
-        text = GenerateChatGPTQuote(**validated_data).generate()
-        title = GenerateChatGPTQuote(request=f'Generate a short title for the article: {text[:1000]}').generate()
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
+        title = GenerateChatGPTQuote(request=f'{Config.TITLE_PROMPT} Theme: {category.name}').generate()
+        validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT} Title is: {title}'
+        text = GenerateChatGPTQuote(**validated_data).generate()
         chat_id = validated_data['chat_id'] or uuid.uuid4()
 
-        return Article.objects.create(params=validated_data, text=text, title=title,category=category,
+        return Article.objects.create(params=validated_data, text=text, title=title, category=category,
                                       language=language, chat_id=chat_id)
 
     def _generate_request(self, validated_data):
