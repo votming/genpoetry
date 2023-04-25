@@ -24,7 +24,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ArticleSerializer(serializers.ModelSerializer):
     params = serializers.JSONField(read_only=True)
-    category = serializers.CharField(source='category.name')
+    category = serializers.CharField(source='category.name', allow_null=True)
     language = serializers.CharField(source='language.name')
 
     class Meta:
