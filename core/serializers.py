@@ -24,7 +24,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ArticleSerializer(serializers.ModelSerializer):
     params = serializers.JSONField(read_only=True)
-    category = serializers.CharField(source='category.name', allow_null=True)
+    category = serializers.CharField(source='category.name')
     language = serializers.CharField(source='language.name')
 
     class Meta:
@@ -36,7 +36,7 @@ class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
     min_characters_number = serializers.IntegerField(required=False, default=400, min_value=10, max_value=9000)
     max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
-    category = serializers.CharField(default=None, required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Category.objects.all(), required=False)
+    category = serializers.CharField(default='Business', required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Category.objects.all(), required=False)
     language = serializers.CharField(default='English', required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Language.objects.all(), required=False)
     key_words = serializers.CharField(default=None, max_length=2000, required=False, allow_null=True)
     objectivity = serializers.BooleanField(default=False, required=False)
