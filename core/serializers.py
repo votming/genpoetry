@@ -58,7 +58,8 @@ class ArticleCreateSerializer(serializers.Serializer):
         language = Language.objects.get(name=validated_data.get('language'))
         title_request = f'{Config.TITLE_PROMPT} ' + (f'Theme: {category.name}' if category is not None else '')
         title = GenerateChatGPTQuote(request=title_request).generate()
-        validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT} Title is: {title}'
+        validated_data['title'] = title
+        validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT}'
         text = GenerateChatGPTQuote(**validated_data).generate()
         chat_id = validated_data['chat_id'] or uuid.uuid4()
 
@@ -78,4 +79,4 @@ class ArticleCreateSerializer(serializers.Serializer):
         out = f' The number of symbols of the text must be between {validated_data["min_characters_number"]} and ' \
               f'{validated_data["max_characters_number"]}. Use only {validated_data["language"]} language. {settings}'
 
-        return f'{validated_data["request"]} {out}'
+        return f'{validated_data["request"]} {out}. The title is: "{validated_data["title"]}"'
