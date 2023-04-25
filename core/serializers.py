@@ -56,7 +56,7 @@ class ArticleCreateSerializer(serializers.Serializer):
     def create(self, validated_data) -> list[Article]:
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
-        title_request = f'{Config.TITLE_PROMPT} ' + (f'Theme: {category.name}' if category else '')
+        title_request = f'{Config.TITLE_PROMPT} ' + (f'Theme: {category.name}' if category is not None else '')
         title = GenerateChatGPTQuote(request=title_request).generate()
         validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT} Title is: {title}'
         text = GenerateChatGPTQuote(**validated_data).generate()
