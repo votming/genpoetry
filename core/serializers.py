@@ -73,8 +73,8 @@ class ArticleCreateSerializer(serializers.Serializer):
         if validated_data['key_words'] is not None:
             settings += f'You have to use this words in the article: {validated_data["key_words"]}.'
         if validated_data['category'] is not None:
-            settings += f'The main theme of the article should be "{validated_data["category"]}"'
-        out = f'. Number of characters of the article must be between {validated_data["min_characters_number"]} and ' \
+            settings += f'The main theme of the text should be "{validated_data["category"]}"'
+        out = f'. Number of characters of the text must be between {validated_data["min_characters_number"]} and ' \
               f'{validated_data["max_characters_number"]}. Use only {validated_data["language"]} language. {settings}'
 
         return f'{validated_data["request"]} {out}'
