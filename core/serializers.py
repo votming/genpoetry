@@ -56,7 +56,7 @@ class ArticleCreateSerializer(serializers.Serializer):
     def create(self, validated_data) -> list[Article]:
         validated_data['request'] = validated_data['request'] or Config.DEFAULT_CHATGPT_PROMPT
         text = GenerateChatGPTQuote(**validated_data).generate()
-        title = GenerateChatGPTQuote(request=f'Generate a short title for the article: {text}').generate()
+        title = GenerateChatGPTQuote(request=f'Generate a short title for the article: {text[:1000]}').generate()
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
         chat_id = validated_data['chat_id'] or uuid.uuid4()

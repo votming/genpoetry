@@ -5,9 +5,6 @@ django.setup()
 from celery import Celery
 
 from core.models import Article
-
-
-
 from core.models import Category
 from core.models import Language
 from core.services.articles import GenerateArticleService
@@ -26,14 +23,17 @@ def generate_articles():
     print('start generating')
     categories = Category.objects.all()
     languages = Language.objects.all()
+    for language in languages:
+categories = Category.objects.all()
+while True:
+    language = Language.objects.get(name='English')
     for category in categories:
-        for language in languages:
-            for _ in range(language.priority):
-                if 50 < Article.objects.filter(category=category, language=language, shown_times=0).count():
-                    continue
-                print('creating new article')
-                data = dict(language=language.name, category=category.name)
-                article = GenerateArticleService(data=data).generate()
-                print(f'created {article}')
-                time.sleep(20)
+        if 50 < Article.objects.filter(category=category, language=language, shown_times=0).count():
+            print(f'No more articles for {category}')
+            continue
+        print('creating new article')
+        data = dict(language=language.name, category=category.name)
+        article = GenerateArticleService(data=data).generate()
+        print(f'created {article}')
+        time.sleep(20)
     print('generating finished')
