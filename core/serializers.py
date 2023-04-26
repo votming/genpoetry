@@ -1,3 +1,5 @@
+import random
+import re
 import uuid
 
 from rest_framework import serializers
@@ -42,42 +44,60 @@ class ArticleCreateSerializer(serializers.Serializer):
     objectivity = serializers.BooleanField(default=False, required=False)
     officiality = serializers.BooleanField(default=False, required=False)
     temperature = serializers.FloatField(default=0.3, min_value=0, max_value=2, required=False)
-    request = serializers.CharField(default=Config.DEFAULT_CHATGPT_PROMPT, max_length=10000, allow_null=True)
+    request = serializers.CharField(default=None, max_length=10000, allow_null=True)
     chat_id = serializers.CharField(default=None, max_length=100, allow_null=True)
 
     def validate(self, attrs):
         attrs = super().validate(attrs)
-        attrs['request'] = self._generate_request(attrs)
+        attrs['request'] = self._generate_request(attrs) if attrs['request'] is None else attrs['request']
         if attrs['max_characters_number'] < attrs['min_characters_number']:
             raise serializers.ValidationError({'min_characters_number': MinCharactersLessThanMaxCharactersError()})
 
         return attrs
 
     def create(self, validated_data) -> list[Article]:
+        #category = Category.objects.filter(name=validated_data.get('category')).first()
+        #language = Language.objects.get(name=validated_data.get('language'))
+        #title_request = f'{Config.TITLE_PROMPT} ' + (f'Theme: {category.name}' if category is not None else '')
+        #title = GenerateChatGPTQuote(request=title_request).generate()
+        #if validated_data['request'] is not None:
+        #    validated_data['request'] = f'{validated_data["request"]}. The title is: "{title}"'
+        #validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT}'
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
-        title_request = f'{Config.TITLE_PROMPT} ' + (f'Theme: {category.name}' if category is not None else '')
-        title = GenerateChatGPTQuote(request=title_request).generate()
-        if validated_data['request'] is not None:
-            validated_data['request'] = f'{validated_data["request"]}. The title is: "{title}"'
-        validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT}'
-        text = GenerateChatGPTQuote(**validated_data).generate()
+        chatgpt_response_text = GenerateChatGPTQuote(**validated_data).generate()
+        pattern = r'Title:\s*(?P<title>.*?)\s*Text:\s*(?P<text>.*?)$'
+        match = re.search(pattern, chatgpt_response_text, re.DOTALL)
+        text = chatgpt_response_text
+        title = ''
+        if match:
+            title = match.group('title')
+            text = match.group('text')
         chat_id = validated_data['chat_id'] or uuid.uuid4()
 
         return Article.objects.create(params=validated_data, text=text, title=title, category=category,
                                       language=language, chat_id=chat_id)
 
     def _generate_request(self, validated_data):
-        settings = ''
+        """settings = ''
         if validated_data['objectivity'] is True:
-            settings += 'You should add true facts in the article.'
+           settings += 'You should add true facts in the article.'
         if validated_data['officiality'] is True:
-            settings += 'You should use official and formal language in the article.'
+           settings += 'You should use official and formal language in the article.'
         if validated_data['key_words'] is not None:
-            settings += f'You have to use this words in the article: {validated_data["key_words"]}.'
+           settings += f'You have to use this words in the article: {validated_data["key_words"]}.'
         if validated_data['category'] is not None:
-            settings += f'The main theme of the text should be "{validated_data["category"]}"'
+           settings += f'The main theme of the text should be "{validated_data["category"]}"'
         out = f' The number of symbols of the text must be between {validated_data["min_characters_number"]} and ' \
-              f'{validated_data["max_characters_number"]}. Use only {validated_data["language"]} language. {settings}'
-
-        return f'{validated_data["request"]} {out}'
+             f'{validated_data["max_characters_number"]}. Use only {validated_data["language"]} language. {settings}'"""
+        category = Category.objects.get(name=validated_data['category'])
+        category_object = random.choice(category.object_words.split(','))
+        category_subject = random.choice(category.subject_words.split(','))
+        return Config.TITLE_PROMPT.format(
+            category=category.name,
+            category_object=category_object,
+            category_subject=category_subject,
+            chars_min=validated_data['min_characters_number'],
+            chars_max=validated_data['max_characters_number'],
+            language=validated_data['language'],
+        )

@@ -6,6 +6,8 @@ from django.db import models
 class Category(models.Model):
     name = models.CharField(max_length=150, unique=True)
     keywords = models.CharField(max_length=2000, default=None, null=True)
+    object_words = models.CharField(max_length=2000, default='')
+    subject_words = models.CharField(max_length=2000, default='')
     created_at = models.DateTimeField(auto_now=False, auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, auto_now_add=False)
 
