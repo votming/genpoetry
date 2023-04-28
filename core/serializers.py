@@ -1,5 +1,4 @@
 import random
-import re
 import uuid
 
 from rest_framework import serializers
@@ -8,6 +7,7 @@ from configuration import Config
 from core.exceptions import MinCharactersLessThanMaxCharactersError
 from core.models import Category, Article, Language
 from core.services.chatgpt import GenerateChatGPTQuote
+from core.utils import parse_article_response
 
 
 class LanguageSerializer(serializers.ModelSerializer):
@@ -38,8 +38,8 @@ class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
     min_characters_number = serializers.IntegerField(required=False, default=400, min_value=10, max_value=9000)
     max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
-    category = serializers.CharField(default='Business', required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Category.objects.all(), required=False)
-    language = serializers.CharField(default='English', required=False)#serializers.SlugRelatedField(default=None, slug_field='name', queryset=Language.objects.all(), required=False)
+    category = serializers.CharField(default='Business', required=False)
+    language = serializers.CharField(default='English', required=False)
     key_words = serializers.CharField(default=None, max_length=2000, required=False, allow_null=True)
     objectivity = serializers.BooleanField(default=False, required=False)
     officiality = serializers.BooleanField(default=False, required=False)
@@ -47,49 +47,31 @@ class ArticleCreateSerializer(serializers.Serializer):
     request = serializers.CharField(default=None, max_length=10000, allow_null=True)
     chat_id = serializers.CharField(default=None, max_length=100, allow_null=True)
 
-    def validate(self, attrs):
+    def validate(self, attrs: dict) -> dict:
         attrs = super().validate(attrs)
         attrs['request'] = self._generate_request(attrs) if attrs['request'] is None else attrs['request']
         if attrs['max_characters_number'] < attrs['min_characters_number']:
             raise serializers.ValidationError({'min_characters_number': MinCharactersLessThanMaxCharactersError()})
-
         return attrs
 
-    def create(self, validated_data) -> list[Article]:
-        #category = Category.objects.filter(name=validated_data.get('category')).first()
-        #language = Language.objects.get(name=validated_data.get('language'))
-        #title_request = f'{Config.TITLE_PROMPT} ' + (f'Theme: {category.name}' if category is not None else '')
-        #title = GenerateChatGPTQuote(request=title_request).generate()
-        #if validated_data['request'] is not None:
-        #    validated_data['request'] = f'{validated_data["request"]}. The title is: "{title}"'
-        #validated_data['request'] = validated_data["request"] or f'{Config.DEFAULT_CHATGPT_PROMPT}'
+    def create(self, validated_data: dict) -> Article:
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
         chatgpt_response_text = GenerateChatGPTQuote(**validated_data).generate()
-        pattern = r'Title:\s*(?P<title>.*?)\s*Text:\s*(?P<text>.*?)$'
-        match = re.search(pattern, chatgpt_response_text, re.DOTALL)
-        text = chatgpt_response_text
-        title = ''
-        if match:
-            title = match.group('title')
-            text = match.group('text')
+        title, text = parse_article_response(chatgpt_response_text)
         chat_id = validated_data['chat_id'] or uuid.uuid4()
 
         return Article.objects.create(params=validated_data, text=text, title=title, category=category,
                                       language=language, chat_id=chat_id)
 
-    def _generate_request(self, validated_data):
+    def _generate_request(self, validated_data: dict) -> str:
         """settings = ''
         if validated_data['objectivity'] is True:
            settings += 'You should add true facts in the article.'
         if validated_data['officiality'] is True:
            settings += 'You should use official and formal language in the article.'
         if validated_data['key_words'] is not None:
-           settings += f'You have to use this words in the article: {validated_data["key_words"]}.'
-        if validated_data['category'] is not None:
-           settings += f'The main theme of the text should be "{validated_data["category"]}"'
-        out = f' The number of symbols of the text must be between {validated_data["min_characters_number"]} and ' \
-             f'{validated_data["max_characters_number"]}. Use only {validated_data["language"]} language. {settings}'"""
+           settings += f'You have to use this words in the article: {validated_data["key_words"]}.''"""
         category = Category.objects.get(name=validated_data['category'])
         category_object = random.choice(category.object_words.split(','))
         category_subject = random.choice(category.subject_words.split(','))

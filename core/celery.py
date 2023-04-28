@@ -24,16 +24,19 @@ def generate_articles():
     categories = Category.objects.all()
     languages = Language.objects.all()
     for language in languages:
-categories = Category.objects.all()
-while True:
-    language = Language.objects.get(name='English')
-    for category in categories:
-        if 50 < Article.objects.filter(category=category, language=language, shown_times=0).count():
-            print(f'No more articles for {category}')
-            continue
-        print('creating new article')
-        data = dict(language=language.name, category=category.name)
-        article = GenerateArticleService(data=data).generate()
-        print(f'created {article}')
-        time.sleep(20)
+        for _ in range(language.priority):
+            for category in categories:
+                for _ in range(category.priority):
+                    generate_article(category, language)
     print('generating finished')
+
+
+def generate_article(category, language):
+    if 20 < Article.objects.filter(category=category, language=language, shown_times=0).count():
+        print(f'No more articles for {category.name} ({language.name})')
+        return
+    print(f'creating a new article [{category.name}, {language.name}]')
+    data = dict(language=language.name, category=category.name)
+    article = GenerateArticleService(data=data).generate()
+    print(f'created {article}')
+    time.sleep(18)
