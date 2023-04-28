@@ -73,8 +73,8 @@ class ArticleCreateSerializer(serializers.Serializer):
         if validated_data['key_words'] is not None:
            settings += f'You have to use this words in the article: {validated_data["key_words"]}.''"""
         category = Category.objects.get(name=validated_data['category'])
-        category_object = random.choice(category.object_words.split(','))
-        category_subject = random.choice(category.subject_words.split(','))
+        category_object = random.choice(category.object_words.replace(', ', ',').split(','))
+        category_subject = random.choice(category.subject_words.replace(', ', ',').split(','))
         return Config.TITLE_PROMPT.format(
             category=category.name,
             category_object=category_object,
