@@ -1,6 +1,6 @@
 import re
 
-ARTICLE_TITLE_TEXT_PATTERN = r'Title:\s*(?P<title>.*?)\s*Text:\s*(?P<text>.*?)$'
+ARTICLE_TITLE_TEXT_PATTERN = r'A:\s*(?P<title>.*?)\s*B:\s*(?P<text>.*?)$'
 
 
 def parse_article_response(chatgpt_response_text: str):
