@@ -32,11 +32,14 @@ def generate_articles():
 
 
 def generate_article(category, language):
-    if 20 < Article.objects.filter(category=category, language=language, shown_times=0).count():
-        print(f'No more articles for {category.name} ({language.name})')
-        return
-    print(f'creating a new article [{category.name}, {language.name}]')
-    data = dict(language=language.name, category=category.name)
-    article = GenerateArticleService(data=data).generate()
-    print(f'created {article}')
-    time.sleep(18)
+    try:
+        if 20 < Article.objects.filter(category=category, language=language, shown_times=0).count():
+            print(f'No more articles for {category.name} ({language.name})')
+            return
+        print(f'creating a new article [{category.name}, {language.name}]')
+        data = dict(language=language.name, category=category.name)
+        article = GenerateArticleService(data=data).generate()
+        print(f'created {article}')
+        time.sleep(18)
+    except Exception as ex:
+        print(f'error on creating an article: {ex}')

@@ -57,7 +57,11 @@ class ArticleCreateSerializer(serializers.Serializer):
     def create(self, validated_data: dict) -> Article:
         category = Category.objects.filter(name=validated_data.get('category')).first()
         language = Language.objects.get(name=validated_data.get('language'))
+        min_chars, max_chars = validated_data['min_characters_number'], validated_data['max_characters_number']
         chatgpt_response_text = GenerateChatGPTQuote(**validated_data).generate()
+        if '[' in chatgpt_response_text and ']' in chatgpt_response_text or \
+                str(min_chars) in chatgpt_response_text and str(max_chars) in chatgpt_response_text:
+            raise Exception('Appropriate text was not generated')
         title, text = parse_article_response(chatgpt_response_text)
         chat_id = validated_data['chat_id'] or uuid.uuid4()
 

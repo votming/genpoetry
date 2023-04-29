@@ -16,7 +16,7 @@ class GenerateChatGPTQuote:
         self.temperature = temperature
         self.chat_id = chat_id
 
-    def generate(self) -> list[str]:
+    def generate(self) -> str:
         messages = self._prepare_messages()
         try:
             chat = openai.ChatCompletion.create(
