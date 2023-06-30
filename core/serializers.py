@@ -40,6 +40,8 @@ class SpecificArticleCreateSerializer(serializers.Serializer):
     key_terms = serializers.CharField(max_length=10000, default=None)
     language = serializers.CharField(max_length=100, default='english')
     required_phrases = serializers.CharField(max_length=10000, default=None)
+    min_characters_number = serializers.IntegerField(required=False, default=400, min_value=10, max_value=9000)
+    max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
 
     def create(self, validated_data: dict) -> Article:
         query = f'Description: {validated_data["query"]}\n' if validated_data['query'] else ''
@@ -49,7 +51,8 @@ class SpecificArticleCreateSerializer(serializers.Serializer):
         required_phrases = f'These words/phrases must be contained in the text literally, as is: ' \
                            f'{validated_data["required_phrases"]}\n' if validated_data['required_phrases'] else ''
 
-        prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language}{required_phrases}"""
+        prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language}{required_phrases}
+From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters."""
         print(f"PROMPT IS: {prompt}")
         chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
 
