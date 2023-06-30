@@ -52,7 +52,11 @@ class SpecificArticleCreateSerializer(serializers.Serializer):
                            f'{validated_data["required_phrases"]}\n' if validated_data['required_phrases'] else ''
 
         prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language}{required_phrases}
-From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters."""
+From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters.
+
+Output Format:
+Title: ...
+Content: ..."""
         print(f"PROMPT IS: {prompt}")
         chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
 
