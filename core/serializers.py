@@ -1,4 +1,5 @@
 import random
+import re
 import uuid
 
 from rest_framework import serializers
@@ -44,21 +45,31 @@ class SpecificArticleCreateSerializer(serializers.Serializer):
     max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
 
     def create(self, validated_data: dict) -> Article:
+        language = Language.objects.filter(name=validated_data["language"].capitalize()).first()
+        language_name = language.name.lower() if language is not None else validated_data["language"]
         query = f'Description: {validated_data["query"]}\n' if validated_data['query'] else ''
         title = f'Title: {validated_data["title"]}\n' if validated_data['title'] else ''
         key_terms = f'Keyterms: {validated_data["key_terms"]}\n' if validated_data['key_terms'] else ''
-        language = f'Language: {validated_data["language"]}\n'
+        language_text = f'Language: {language_name}\n'
         required_phrases = f'These words/phrases must be contained in the text literally, as is: ' \
                            f'{validated_data["required_phrases"]}\n' if validated_data['required_phrases'] else ''
 
-        prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language}{required_phrases}
+        prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language_text}{required_phrases}
 From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters.
 
-Write only the content of the article."""
+Output format:
+Title: ...
+Content: ..."""
         print(f"PROMPT IS: {prompt}")
         chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+        matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        text = matches[0]
+        if text.startswith('\n'):
+            text = text[1:]
+        return Article.objects.create(params=dict(language=validated_data["language"], query=validated_data["query"], key_terms=validated_data["key_terms"], required_phrases=validated_data["required_phrases"]),
+                                      language=language, text=text,
+                                      title=validated_data["title"] or 'No title')
 
-        return Article.objects.create(params=dict(), text=chatgpt_response_text, title=validated_data["title"] or 'No title')
 
 class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
