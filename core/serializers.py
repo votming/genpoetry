@@ -54,13 +54,11 @@ class SpecificArticleCreateSerializer(serializers.Serializer):
         prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language}{required_phrases}
 From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters.
 
-Output Format:
-Title: ...
-Content: ..."""
+Write only the content of the article."""
         print(f"PROMPT IS: {prompt}")
         chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
 
-        return Article.objects.create(params=dict(), text=chatgpt_response_text, title=title or 'No title')
+        return Article.objects.create(params=dict(), text=chatgpt_response_text, title=validated_data["title"] or 'No title')
 
 class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
