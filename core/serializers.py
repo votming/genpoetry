@@ -26,13 +26,34 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ArticleSerializer(serializers.ModelSerializer):
     params = serializers.JSONField(read_only=True)
-    category = serializers.CharField(source='category.name')
-    language = serializers.CharField(source='language.name')
+    category = serializers.CharField(source='category.name', allow_null=True)
+    language = serializers.CharField(source='language.name', allow_null=True)
 
     class Meta:
         model = Article
         fields = '__all__'
 
+class SpecificArticleCreateSerializer(serializers.Serializer):
+    model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
+    query = serializers.CharField(max_length=20000, default=None)
+    title = serializers.CharField(max_length=1000, default=None)
+    key_terms = serializers.CharField(max_length=10000, default=None)
+    language = serializers.CharField(max_length=100, default='english')
+    required_phrases = serializers.CharField(max_length=10000, default=None)
+
+    def create(self, validated_data: dict) -> Article:
+        query = f'Description: {validated_data["query"]}\n' if validated_data['query'] else ''
+        title = f'Title: {validated_data["title"]}\n' if validated_data['title'] else ''
+        key_terms = f'Keyterms: {validated_data["key_terms"]}\n' if validated_data['key_terms'] else ''
+        language = f'Language: {validated_data["language"]}\n'
+        required_phrases = f'These words/phrases must be contained in the text literally, as is: ' \
+                           f'{validated_data["required_phrases"]}\n' if validated_data['required_phrases'] else ''
+
+        prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language}{required_phrases}"""
+        print(f"PROMPT IS: {prompt}")
+        chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+
+        return Article.objects.create(params=dict(), text=chatgpt_response_text, title=title or 'No title')
 
 class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)

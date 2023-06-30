@@ -11,7 +11,8 @@ from rest_framework.response import Response
 from core.filters import ArticleFilter
 from core.models import Category, Article
 from core.models import Language
-from core.serializers import CategorySerializer, ArticleSerializer, ArticleCreateSerializer
+from core.serializers import CategorySerializer, ArticleSerializer, ArticleCreateSerializer, \
+    SpecificArticleCreateSerializer
 from core.serializers import LanguageSerializer
 from core.services.articles import GenerateArticleService
 from genpoetry.permissions import TokenPermission
@@ -54,6 +55,15 @@ class ArticleViewSet(ModelViewSet):
     @swagger_auto_schema(manual_parameters=[dont_count_param])
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    def generate_specific_article(self, request, *args, **kwargs) -> Response:
+        serializer = SpecificArticleCreateSerializer(data=request.GET.dict())
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        data = ArticleSerializer(serializer.instance).data
+        headers = self.get_success_headers(data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+
 
     def generate_article(self, request, *args, **kwargs) -> Response:
         kwargs['context'] = self.get_serializer_context()
