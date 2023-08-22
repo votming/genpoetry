@@ -25,6 +25,7 @@ class Article(models.Model):
     shown_times = models.IntegerField(default=0)
     category = models.ForeignKey(Category, null=True, default=None, on_delete=models.SET_NULL)
     language = models.ForeignKey(Language, null=True, default=None, on_delete=models.SET_NULL)
+    author_name = models.CharField(max_length=120, default=None, null=True)
     chat_id = models.UUIDField(default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now=False, auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, auto_now_add=False)
