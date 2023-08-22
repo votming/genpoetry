@@ -68,7 +68,7 @@ class ArticleViewSet(ModelViewSet):
     def generate_article(self, request, *args, **kwargs) -> Response:
         kwargs['context'] = self.get_serializer_context()
         kwargs['data'] = {**request.data, **self.request.query_params.dict()}
-        articles_number = kwargs['data'].get('articles_number', 1)
+        articles_number = int(kwargs['data'].get('articles_number', 1))
         articles = []
         for _ in range(articles_number):
             article = GenerateArticleService(*args, **kwargs).generate()
