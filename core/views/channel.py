@@ -58,7 +58,7 @@ class ArticleViewSet(ModelViewSet):
         queryset = super().filter_queryset(queryset)
         dont_update_usage = strtobool(self.request.query_params.get('dont_count', 'false'))
         if self.action == 'list' and not dont_update_usage:
-            Article.objects.filter(id__in=queryset.values_list('id')).update(shown_times=F('shown_times') + 1)
+            Article.objects.filter(id__in=queryset.values_list('id')).update(shown_times=F('shown_times') + 1).order_by('shown_times')
         return queryset
 
     @swagger_auto_schema(manual_parameters=[dont_count_param])
