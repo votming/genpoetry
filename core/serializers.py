@@ -62,7 +62,7 @@ Title: ...
 Content: ..."""
         print(f"PROMPT IS: {prompt}")
         text = self.generate_text(prompt)
-        return Article.objects.create(params=dict(language=validated_data["language"], query=validated_data["query"], key_terms=validated_data["key_terms"], required_phrases=validated_data["required_phrases"]),
+        return Article.objects.create(params=dict(model=validated_data['model'], language=validated_data["language"], query=validated_data["query"], key_terms=validated_data["key_terms"], required_phrases=validated_data["required_phrases"]),
                                       language=language, text=text,
                                       title=validated_data["title"] or 'No title')
 
