@@ -72,6 +72,9 @@ Content: ..."""
         if len(matches) == 0:
             chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
             matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        if len(matches) == 0:
+            chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+            matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
         text = matches[0]
         if text.startswith('\n'):
             text = text[1:]
