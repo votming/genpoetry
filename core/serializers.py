@@ -35,7 +35,7 @@ class ArticleSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SpecificArticleCreateSerializer(serializers.Serializer):
-    model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
+    model = serializers.CharField(default='gpt-4', required=False, max_length=50)
     query = serializers.CharField(max_length=20000, default=None)
     title = serializers.CharField(max_length=1000, default=None)
     key_terms = serializers.CharField(max_length=10000, default=None)
@@ -61,15 +61,21 @@ Output format:
 Title: ...
 Content: ..."""
         print(f"PROMPT IS: {prompt}")
-        chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
-        matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
-        text = matches[0]
-        if text.startswith('\n'):
-            text = text[1:]
+        text = self.generate_text(prompt)
         return Article.objects.create(params=dict(language=validated_data["language"], query=validated_data["query"], key_terms=validated_data["key_terms"], required_phrases=validated_data["required_phrases"]),
                                       language=language, text=text,
                                       title=validated_data["title"] or 'No title')
 
+    def generate_text(self, prompt):
+        chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+        matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        if len(matches) == 0:
+            chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+            matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        text = matches[0]
+        if text.startswith('\n'):
+            text = text[1:]
+        return text
 
 class ArticleCreateSerializer(serializers.Serializer):
     model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
