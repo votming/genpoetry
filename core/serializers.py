@@ -81,7 +81,7 @@ Content: ..."""
         return text
 
 class ArticleCreateSerializer(serializers.Serializer):
-    model = serializers.CharField(default='gpt-3.5-turbo', required=False, max_length=50)
+    model = serializers.CharField(default='gpt-4', required=False, max_length=50)
     min_characters_number = serializers.IntegerField(required=False, default=400, min_value=10, max_value=9000)
     max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
     category = serializers.CharField(default='Business', required=False)
@@ -89,7 +89,7 @@ class ArticleCreateSerializer(serializers.Serializer):
     key_words = serializers.CharField(default=None, max_length=2000, required=False, allow_null=True)
     objectivity = serializers.BooleanField(default=False, required=False)
     officiality = serializers.BooleanField(default=False, required=False)
-    temperature = serializers.FloatField(default=0.3, min_value=0, max_value=2, required=False)
+    temperature = serializers.FloatField(default=1, min_value=0, max_value=2, required=False)
     request = serializers.CharField(default=None, max_length=10000, allow_null=True)
     chat_id = serializers.CharField(default=None, max_length=100, allow_null=True)
 

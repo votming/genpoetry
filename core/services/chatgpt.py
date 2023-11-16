@@ -8,7 +8,7 @@ openai.api_key = Config.CHATGPT_TOKEN
 
 class GenerateChatGPTQuote:
 
-    def __init__(self, request: str, chat_context: list[str] = None, temperature: int = 1, model: str = 'gpt-3.5-turbo',
+    def __init__(self, request: str, chat_context: list[str] = None, temperature: int = 1, model: str = 'gpt-4',
                  chat_id: str = None, **kwargs):
         self.model = model
         self.request = request
