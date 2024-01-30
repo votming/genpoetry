@@ -107,9 +107,10 @@ class ArticleCreateSerializer(serializers.Serializer):
         chatgpt_response_text = GenerateChatGPTQuote(**validated_data).generate()
         author_name_request = GenerateChatGPTQuote(request=f"Generate me a random person's name. Language: {language.name}. In the response write only the name (two words only)").generate()
         author_name = ' '.join(author_name_request.split(' ')[:2])
-        if '[' in chatgpt_response_text and ']' in chatgpt_response_text or \
-                str(min_chars) in chatgpt_response_text and str(max_chars) in chatgpt_response_text:
-            raise Exception('Appropriate text was not generated')
+        chatgpt_response_text = chatgpt_response_text.replace('[', '').replace(']', '')
+        # if '[' in chatgpt_response_text and ']' in chatgpt_response_text or \
+        #         str(min_chars) in chatgpt_response_text and str(max_chars) in chatgpt_response_text:
+        #     raise Exception('Appropriate text was not generated')
         title, text = parse_article_response(chatgpt_response_text)
         chat_id = validated_data['chat_id'] or uuid.uuid4()
 
