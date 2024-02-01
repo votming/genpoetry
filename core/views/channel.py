@@ -1,5 +1,6 @@
 from distutils.util import strtobool
 
+from django.db import transaction
 from django.db.models import F
 from drf_yasg import openapi
 from drf_yasg.inspectors import SwaggerAutoSchema
@@ -10,6 +11,7 @@ from rest_framework.decorators import api_view
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 
+from core.celery import generate_specific_article_async, generate_article_async
 from core.filters import ArticleFilter
 from core.models import Category, Article
 from core.models import Language
@@ -66,13 +68,25 @@ class ArticleViewSet(ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def generate_article(self, request, *args, **kwargs) -> Response:
+        is_async = str(request.GET.dict().get('async', False)).lower() in {'true', '1', 'yes'}
         kwargs['context'] = self.get_serializer_context()
         kwargs['data'] = {**request.data, **self.request.query_params.dict()}
         articles_number = int(kwargs['data'].get('articles_number', 1))
         articles = []
-        for _ in range(articles_number):
-            article = GenerateArticleService(*args, **kwargs).generate()
-            articles.append(article)
+        if is_async:
+            for _ in range(articles_number):
+                article = Article.objects.create(params=dict(), status='in_progress')
+                articles.append(article)
+
+                transaction.on_commit(lambda: generate_article_async.s({
+                    'id': article.id,
+                    'status': 'done',
+                    **kwargs['data']
+                }).apply_async())
+        else:
+            for _ in range(articles_number):
+                article = GenerateArticleService(*args, **kwargs).generate()
+                articles.append(article)
         data = ArticleSerializer(articles, many=True).data
         headers = self.get_success_headers(data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)
@@ -87,9 +101,19 @@ class SpecificArticleViewSet(ArticleViewSet):
     permission_classes = (TokenPermission,)
     @swagger_auto_schema(manual_parameters=[query, title, key_terms, language, required_phrases, min_characters_number, max_characters_number])
     def generate_specific_article(self, request, *args, **kwargs) -> Response:
-        serializer = SpecificArticleCreateSerializer(data=request.GET.dict())
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+        is_async = str(request.GET.dict().get('async', False)).lower() in {'true', '1', 'yes'}
+        if is_async:
+            article = Article.objects.create(params=dict(), status='in_progress')
+            serializer = ArticleSerializer(article)
+            transaction.on_commit(lambda: generate_specific_article_async.s({
+                'id': article.id,
+                'status': 'done',
+                **request.GET.dict()
+            }).apply_async())
+        else:
+            serializer = SpecificArticleCreateSerializer(data=request.GET.dict())
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
         data = ArticleSerializer(serializer.instance).data
         headers = self.get_success_headers(data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)

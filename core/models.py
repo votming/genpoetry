@@ -21,6 +21,7 @@ class Language(models.Model):
 class Article(models.Model):
     title = models.CharField(max_length=250)
     text = models.CharField(max_length=10000)
+    status = models.CharField(max_length=15, default='done')
     params = models.JSONField()
     shown_times = models.IntegerField(default=0)
     category = models.ForeignKey(Category, null=True, default=None, on_delete=models.SET_NULL)

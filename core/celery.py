@@ -1,5 +1,7 @@
 import time
 import os, django
+import traceback
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "genpoetry.settings")
 django.setup()
 from celery import Celery
@@ -11,6 +13,8 @@ from core.services.articles import GenerateArticleService
 
 celery = Celery()
 celery.conf.broker_url = 'redis://localhost:6379/0'
+
+from core.serializers import SpecificArticleCreateSerializer, ArticleSerializer, ArticleCreateSerializer
 
 
 @celery.on_after_configure.connect
@@ -33,7 +37,7 @@ def generate_articles():
 
 def generate_article(category, language):
     try:
-        if 20 < Article.objects.filter(category=category, language=language, shown_times=0).count():
+        if 3 < Article.objects.filter(category=category, language=language, shown_times=0).count():
             print(f'No more articles for {category.name} ({language.name})')
             return
         print(f'creating a new article [{category.name}, {language.name}]')
@@ -44,3 +48,38 @@ def generate_article(category, language):
     except Exception as ex:
         time.sleep(10)
         print(f'error on creating an article: {ex}')
+
+
+@celery.task
+def generate_specific_article_async(data):
+    try:
+        print('start generate_specific_article_async')
+        serializer = SpecificArticleCreateSerializer(data=data)
+        serializer.is_valid(raise_exception=False)
+        serializer.save()
+        print('generate_specific_article_async finished')
+    except Exception as ex:
+        print(f'generate_specific_article_async FAILED {ex}')
+        print(traceback.format_exc())
+        article = Article.objects.get(id=data['id'])
+        article.status = 'failed'
+        article.save()
+
+
+@celery.task
+def generate_article_async(data):
+    try:
+        print('start generate_article_async')
+        print(data)
+        serializer = ArticleCreateSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        #article = GenerateArticleService(**data).generate()
+        print('generate_article_async finished')
+    except Exception as ex:
+        print(f'generate_article_async FAILED {ex}')
+        print(traceback.format_exc())
+        article = Article.objects.get(id=data['id'])
+        article.status = 'failed'
+        article.text = str(ex)
+        article.save()

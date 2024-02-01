@@ -12,14 +12,12 @@ from core.utils import parse_article_response
 
 
 class LanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = '__all__'
 
 
 class CategorySerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Category
         fields = '__all__'
@@ -34,10 +32,13 @@ class ArticleSerializer(serializers.ModelSerializer):
         model = Article
         fields = '__all__'
 
+
 class SpecificArticleCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(default=None, required=False)
     model = serializers.CharField(default='gpt-4', required=False, max_length=50)
     query = serializers.CharField(max_length=20000, default=None)
     title = serializers.CharField(max_length=1000, default=None)
+    status = serializers.CharField(max_length=15, default='done', required=False)
     key_terms = serializers.CharField(max_length=10000, default=None)
     language = serializers.CharField(max_length=100, default='english')
     required_phrases = serializers.CharField(max_length=10000, default=None)
@@ -62,9 +63,25 @@ Title: ...
 Content: ..."""
         print(f"PROMPT IS: {prompt}")
         text = self.generate_text(prompt)
-        return Article.objects.create(params=dict(model=validated_data['model'], language=validated_data["language"], query=validated_data["query"], key_terms=validated_data["key_terms"], required_phrases=validated_data["required_phrases"]),
-                                      language=language, text=text,
-                                      title=validated_data["title"] or 'No title')
+        params = {
+            'params': dict(model=validated_data['model'], language=validated_data["language"],
+                           query=validated_data["query"], key_terms=validated_data["key_terms"],
+                           required_phrases=validated_data["required_phrases"]),
+            'language': language, 'text': text, 'status': validated_data['status'],
+            'title': validated_data["title"] or 'No title'
+        }
+
+        if validated_data.get('id'):
+            Article.objects.filter(id=validated_data['id']).update(**params)
+            article = Article.objects.get(id=validated_data['id'])
+        else:
+            article = Article.objects.create(**params)
+        return article
+        # (params=dict(model=validated_data['model'], language=validated_data["language"],
+        #             query=validated_data["query"], key_terms=validated_data["key_terms"],
+        #             required_phrases=validated_data["required_phrases"]),
+        # language=language, text=text,
+        # title=validated_data["title"] or 'No title')
 
     def generate_text(self, prompt):
         chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
@@ -80,12 +97,15 @@ Content: ..."""
             text = text[1:]
         return text
 
+
 class ArticleCreateSerializer(serializers.Serializer):
+    id = serializers.IntegerField(default=None, required=False)
     model = serializers.CharField(default='gpt-4', required=False, max_length=50)
     min_characters_number = serializers.IntegerField(required=False, default=400, min_value=10, max_value=9000)
     max_characters_number = serializers.IntegerField(required=False, default=900, min_value=20, max_value=10000)
     category = serializers.CharField(default='Business', required=False)
     language = serializers.CharField(default='English', required=False)
+    status = serializers.CharField(max_length=15, default='done', required=False)
     key_words = serializers.CharField(default=None, max_length=2000, required=False, allow_null=True)
     objectivity = serializers.BooleanField(default=False, required=False)
     officiality = serializers.BooleanField(default=False, required=False)
@@ -105,7 +125,8 @@ class ArticleCreateSerializer(serializers.Serializer):
         language = Language.objects.get(name=validated_data.get('language'))
         min_chars, max_chars = validated_data['min_characters_number'], validated_data['max_characters_number']
         chatgpt_response_text = GenerateChatGPTQuote(**validated_data).generate()
-        author_name_request = GenerateChatGPTQuote(request=f"Generate me a random person's name. Language: {language.name}. In the response write only the name (two words only)").generate()
+        author_name_request = GenerateChatGPTQuote(
+            request=f"Generate me a random person's name. Language: {language.name}. In the response write only the name (two words only)").generate()
         author_name = ' '.join(author_name_request.split(' ')[:2])
         chatgpt_response_text = chatgpt_response_text.replace('[', '').replace(']', '')
         # if '[' in chatgpt_response_text and ']' in chatgpt_response_text or \
@@ -113,9 +134,18 @@ class ArticleCreateSerializer(serializers.Serializer):
         #     raise Exception('Appropriate text was not generated')
         title, text = parse_article_response(chatgpt_response_text)
         chat_id = validated_data['chat_id'] or uuid.uuid4()
-
-        return Article.objects.create(params=validated_data, text=text, title=title, category=category,
-                                      language=language, chat_id=chat_id, author_name=author_name)
+        params = {
+            'params': validated_data, 'text': text, 'title': title, 'category': category,
+            'language': language, 'chat_id': chat_id, 'author_name': author_name, 'status': validated_data['status']
+        }
+        if validated_data.get('id'):
+            Article.objects.filter(id=validated_data['id']).update(**params)
+            article = Article.objects.get(id=validated_data['id'])
+        else:
+            article = Article.objects.create(**params)
+        return article
+        # return Article.objects.create(params=validated_data, text=text, title=title, category=category,
+        #                               language=language, chat_id=chat_id, author_name=author_name)
 
     def _generate_request(self, validated_data: dict) -> str:
         """settings = ''
