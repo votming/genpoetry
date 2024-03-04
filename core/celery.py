@@ -56,7 +56,8 @@ def generate_specific_article_async(data):
         print('start generate_specific_article_async')
         serializer = SpecificArticleCreateSerializer(data=data)
         serializer.is_valid(raise_exception=False)
-        serializer.save()
+        instance = serializer.save()
+        instance.save()
         print('generate_specific_article_async finished')
     except Exception as ex:
         print(f'generate_specific_article_async FAILED {ex}')
