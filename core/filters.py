@@ -8,7 +8,7 @@ class ArticleFilter(filters.FilterSet):
     language = filters.CharFilter(field_name='language__name')
     status = filters.CharFilter()
 
-    ordering = filters.OrderingFilter(fields=(('shown_times', 'shown_times'), ('id', 'id')))
+    ordering = filters.OrderingFilter(fields=(('shown_times', 'shown_times'),))
 
     class Meta:
         model = Article
