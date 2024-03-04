@@ -79,9 +79,9 @@ class ArticleViewSet(ModelViewSet):
                 articles.append(article)
 
                 transaction.on_commit(lambda: generate_article_async.s({
-                    'id': article.id,
                     'status': 'done',
-                    **kwargs['data']
+                    **kwargs['data'],
+                    'id': article.id,
                 }).apply_async())
         else:
             for _ in range(articles_number):
