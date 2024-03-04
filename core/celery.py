@@ -73,7 +73,8 @@ def generate_article_async(data):
         print(data)
         serializer = ArticleCreateSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        instance = serializer.save()
+        instance.save()
         #article = GenerateArticleService(**data).generate()
         print('generate_article_async finished')
     except Exception as ex:
