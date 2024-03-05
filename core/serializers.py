@@ -1,3 +1,4 @@
+import json
 import random
 import re
 import uuid
@@ -56,19 +57,16 @@ class SpecificArticleCreateSerializer(serializers.Serializer):
                            f'{validated_data["required_phrases"]}\n' if validated_data['required_phrases'] else ''
 
         prompt = f"""Write an article, corresponding to this: \n{query}{title}{key_terms}{language_text}{required_phrases}
-From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters.
-
-Output format:
-Title: ...
-Content: ..."""
+From {validated_data["min_characters_number"]} to {validated_data["max_characters_number"]} characters. Also generate me a random person's name (language: {language.name}). The name should contain two words.
+In response return JSON with fields: title, text, author_name"""
         print(f"PROMPT IS: {prompt}")
-        text = self.generate_text(prompt)
+        title, text, author_name = self.generate_text(prompt)
         params = {
             'params': dict(model=validated_data['model'], language=validated_data["language"],
                            query=validated_data["query"], key_terms=validated_data["key_terms"],
                            required_phrases=validated_data["required_phrases"]),
             'language': language, 'text': text, 'status': validated_data['status'],
-            'title': validated_data["title"] or 'No title'
+            'title': title, 'author_name': author_name
         }
 
         if validated_data.get('id'):
@@ -85,17 +83,18 @@ Content: ..."""
 
     def generate_text(self, prompt):
         chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
-        matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
-        if len(matches) == 0:
-            chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
-            matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
-        if len(matches) == 0:
-            chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
-            matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
-        text = matches[0]
-        if text.startswith('\n'):
-            text = text[1:]
-        return text
+        data = json.loads(chatgpt_response_text)
+        # matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        # if len(matches) == 0:
+        #     chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+        #     matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        # if len(matches) == 0:
+        #     chatgpt_response_text = GenerateChatGPTQuote(request=prompt).generate()
+        #     matches = re.findall(r'Content:(.+)', chatgpt_response_text, re.DOTALL)
+        # text = matches[0]
+        # if text.startswith('\n'):
+        #     text = text[1:]
+        return data['title'], data['text'], data['author_name']
 
 
 class ArticleCreateSerializer(serializers.Serializer):
@@ -125,18 +124,19 @@ class ArticleCreateSerializer(serializers.Serializer):
         language = Language.objects.get(name=validated_data.get('language'))
         min_chars, max_chars = validated_data['min_characters_number'], validated_data['max_characters_number']
         chatgpt_response_text = GenerateChatGPTQuote(**validated_data).generate()
-        author_name_request = GenerateChatGPTQuote(
-            request=f"Generate me a random person's name. Language: {language.name}. In the response write only the name (two words only)").generate()
-        author_name = ' '.join(author_name_request.split(' ')[:2])
-        chatgpt_response_text = chatgpt_response_text.replace('[', '').replace(']', '')
+        data = json.loads(chatgpt_response_text)
+        # author_name_request = GenerateChatGPTQuote(
+        #     request=f"Generate me a random person's name. Language: {language.name}. In the response write only the name (two words only)").generate()
+        # author_name = ' '.join(author_name_request.split(' ')[:2])
+        # chatgpt_response_text = chatgpt_response_text.replace('[', '').replace(']', '')
         # if '[' in chatgpt_response_text and ']' in chatgpt_response_text or \
         #         str(min_chars) in chatgpt_response_text and str(max_chars) in chatgpt_response_text:
         #     raise Exception('Appropriate text was not generated')
-        title, text = parse_article_response(chatgpt_response_text)
+        # title, text = parse_article_response(chatgpt_response_text)
         chat_id = validated_data['chat_id'] or uuid.uuid4()
         params = {
-            'params': validated_data, 'text': text, 'title': title, 'category': category,
-            'language': language, 'chat_id': chat_id, 'author_name': author_name, 'status': validated_data['status']
+            'params': validated_data, 'text': data['text'], 'title': data['title'], 'category': category,
+            'language': language, 'chat_id': chat_id, 'author_name': data['author_name'], 'status': validated_data['status']
         }
         if validated_data.get('id'):
             Article.objects.filter(id=validated_data['id']).update(**params)
