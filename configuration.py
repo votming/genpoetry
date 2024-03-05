@@ -10,4 +10,6 @@ class Config:
     DEFAULT_CHATGPT_PROMPT = os.environ.get("DEFAULT_CHATGPT_PROMPT", 'none')
     DEFAULT_CHATGPT_SYSTEM_PROMPT = os.environ.get("DEFAULT_CHATGPT_SYSTEM_PROMPT", 'none')
     TITLE_PROMPT = os.environ.get("TITLE_PROMPT", 'none')
+    DB_PASSWORD = os.environ.get("DB_PASSWORD", 'none')
+    DB_IP = os.environ.get("DB_IP", 'none')
 
