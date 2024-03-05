@@ -44,7 +44,6 @@ def generate_article(category, language):
         data = dict(language=language.name, category=category.name)
         article = GenerateArticleService(data=data).generate()
         print(f'created {article}')
-        time.sleep(5)
     except Exception as ex:
         time.sleep(10)
         print(f'error on creating an article: {ex}')
